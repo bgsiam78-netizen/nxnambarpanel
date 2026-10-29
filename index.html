@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PATTERN OF XHAWON</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --neon-blue: #00f0ff;
+            --neon-pink: #ff0088;
+            --neon-purple: #b300ff;
+            --neon-green: #00ff44;
+            --neon-red: #ff0044;
+            --neon-yellow: #ffcc00;
+            --bg: #000000;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Orbitron', sans-serif; user-select: none;}
+        body { background: var(--bg); color: #fff; overflow: hidden; height: 100vh; position: relative; }
+
+        #game-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: none; z-index: 1; }
+
+        #float-logo { position: absolute; top: 100px; left: 15px; width: 45px; height: 45px; background: #000; border: 2px solid var(--neon-blue); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: grab; z-index: 2147483647; box-shadow: 0 0 15px var(--neon-blue); touch-action: none;}
+        #float-logo img { width: 38px; height: 38px; border-radius: 50%; pointer-events: none;}
+
+        /* ==========================================
+           MAIN PANEL — FIXED TO NOT COVER NAVBAR
+           ========================================== */
+        #main-panel {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            width: 300px;
+            background: #000;
+            border: 3px solid var(--neon-blue);
+            border-radius: 8px;
+            z-index: 2147483647;
+            display: none;
+            cursor: grab;
+            box-shadow: 0 0 25px var(--neon-blue), inset 0 0 15px rgba(0, 240, 255, 0.2);
+            max-height: calc(100vh - 250px);
+            overflow: auto;
+        }
+        #main-panel::-webkit-scrollbar { width: 3px; }
+        #main-panel::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 2px; }
+
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 8px;
+            border-bottom: 2px solid var(--neon-pink);
+            background: #0a0a0a;
+        }
+        .top-row .arrow { color: var(--neon-blue); font-size: 12px; cursor: pointer; text-shadow: 0 0 8px var(--neon-blue);}
+        .top-row .title { color: var(--neon-pink); font-size: 12px; font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 10px var(--neon-pink);}
+        .top-row .close-x { color: var(--neon-pink); font-size: 14px; cursor: pointer; text-shadow: 0 0 8px var(--neon-pink);}
+
+        .panel-body {
+            display: grid;
+            grid-template-columns: 70px 1fr;
+        }
+
+        .left-col {
+            padding: 6px;
+            border-right: 2px solid var(--neon-blue);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .logo-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--neon-pink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 12px var(--neon-pink), inset 0 0 8px rgba(255, 0, 136, 0.3);
+            overflow: hidden;
+            background: #000;
+        }
+        .logo-circle img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+
+        .side-btn {
+            width: 100%;
+            padding: 5px 3px;
+            background: #000;
+            border: 2px solid var(--neon-blue);
+            border-radius: 5px;
+            color: var(--neon-blue);
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-shadow: 0 0 6px var(--neon-blue);
+            box-shadow: 0 0 8px var(--neon-blue);
+            transition: 0.2s;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .side-btn:hover { background: var(--neon-blue); color: #000; }
+
+        .right-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-bar {
+            padding: 4px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 900;
+            color: var(--neon-pink);
+            border-bottom: 2px solid var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+            letter-spacing: 1px;
+        }
+
+        .period-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 900;
+            border-bottom: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            text-shadow: 0 0 8px var(--neon-blue);
+            background: #0a0a0a;
+        }
+        .period-bar .timer { color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink); }
+
+        .signal-display {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            min-height: 75px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .s-res {
+            font-size: 36px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-align: center;
+        }
+        .s-res.big {
+            color: var(--neon-green);
+            text-shadow: 0 0 15px var(--neon-green), 0 0 30px var(--neon-green);
+        }
+        .s-res.small {
+            color: var(--neon-red);
+            text-shadow: 0 0 15px var(--neon-red), 0 0 30px var(--neon-red);
+        }
+        .c-skip {
+            color: var(--neon-yellow);
+            text-shadow: 0 0 15px var(--neon-yellow);
+            font-size: 26px;
+        }
+        .c-wait {
+            color: #888;
+            font-size: 24px;
+        }
+
+        #exact-num-display {
+            display: none;
+            color: var(--neon-yellow);
+            font-size: 16px;
+            font-weight: 900;
+            text-shadow: 0 0 10px var(--neon-yellow);
+            padding: 2px 6px;
+            border: 1px solid var(--neon-yellow);
+            border-radius: 4px;
+        }
+
+        .status-bar {
+            padding: 5px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 900;
+            color: var(--neon-blue);
+            border-top: 2px solid var(--neon-blue);
+            text-shadow: 0 0 8px var(--neon-blue);
+            letter-spacing: 1px;
+            background: #0a0a0a;
+        }
+
+        .bottom-btn {
+            padding: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--neon-pink);
+            border-top: 2px solid var(--neon-pink);
+            text-shadow: 0 0 15px var(--neon-pink);
+            letter-spacing: 2px;
+            cursor: pointer;
+            background: #000;
+        }
+        .bottom-btn:hover { background: var(--neon-pink); color: #000; }
+
+        /* ==========================================
+           LOGS PANEL
+           ========================================== */
+        #logs-panel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            width: 270px;
+            background: #000;
+            border: 2px solid var(--neon-blue);
+            border-radius: 8px;
+            z-index: 2147483647;
+            display: none;
+            cursor: grab;
+            box-shadow: 0 0 20px var(--neon-blue), inset 0 0 12px rgba(0, 240, 255, 0.2);
+            max-height: calc(100vh - 250px);
+            overflow: hidden;
+        }
+
+        .logs-header {
+            padding: 5px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 900;
+            color: var(--neon-pink);
+            border-bottom: 2px solid var(--neon-pink);
+            text-shadow: 0 0 8px var(--neon-pink);
+            letter-spacing: 1px;
+            background: #0a0a0a;
+            position: relative;
+        }
+        .logs-header .logs-hide-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--neon-pink);
+            cursor: pointer;
+            font-size: 12px;
+            text-shadow: 0 0 8px var(--neon-pink);
+        }
+
+        .logs-table-header {
+            display: grid;
+            grid-template-columns: 45px 60px 55px 40px 60px;
+            font-size: 8px;
+            font-weight: 900;
+            color: var(--neon-blue);
+            text-shadow: 0 0 4px var(--neon-blue);
+            border-bottom: 1px solid var(--neon-blue);
+            background: #0a0a0a;
+        }
+        .logs-table-header div { padding: 4px 1px; text-align: center; }
+
+        .logs-body {
+            max-height: calc(100vh - 350px);
+            overflow-y: auto;
+        }
+        .logs-body::-webkit-scrollbar { width: 3px; }
+        .logs-body::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 2px; }
+
+        .log-row {
+            display: grid;
+            grid-template-columns: 45px 60px 55px 40px 60px;
+            font-size: 9px;
+            font-weight: 900;
+            border-bottom: 1px solid #111;
+        }
+        .log-row div { padding: 4px 1px; text-align: center; }
+
+        .log-row.win {
+            background: rgba(0, 255, 68, 0.08);
+            border-left: 3px solid var(--neon-green);
+        }
+        .log-row.win div { color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+
+        .log-row.loss {
+            background: rgba(255, 0, 68, 0.08);
+            border-left: 3px solid var(--neon-red);
+        }
+        .log-row.loss div { color: var(--neon-red); text-shadow: 0 0 5px var(--neon-red); }
+
+        .log-row.jackpot {
+            background: rgba(255, 204, 0, 0.15);
+            border-left: 3px solid var(--neon-yellow);
+            animation: jackpot-glow 1s infinite alternate;
+        }
+        .log-row.jackpot div { color: var(--neon-yellow); text-shadow: 0 0 10px var(--neon-yellow); }
+
+        @keyframes jackpot-glow {
+            from { box-shadow: inset 0 0 10px rgba(255, 204, 0, 0.2); }
+            to { box-shadow: inset 0 0 25px rgba(255, 204, 0, 0.5); }
+        }
+
+        /* ==========================================
+           LOGIN BOX
+           ========================================== */
+        #login-box { position: absolute; top: 80px; left: 20px; width: 260px; background: rgba(0,0,0,0.98); padding: 18px; border-radius: 12px; border: 2px solid var(--neon-blue); text-align: center; box-shadow: 0 0 30px var(--neon-blue); z-index: 2147483647; display: none; cursor: grab;}
+        #login-box h2 { font-size: 13px; color: var(--neon-pink); margin-bottom: 12px; text-shadow: 0 0 15px var(--neon-pink);}
+        #login-box input { width: 100%; padding: 9px; background: rgba(0,0,0,0.8); border: 2px solid var(--neon-blue); color: var(--neon-blue); border-radius: 6px; text-align: center; margin-bottom: 10px; font-size: 12px; outline: none; box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);}
+        .btn { width: 100%; padding: 9px; background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple)); color: #fff; font-weight: 900; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 8px; font-size: 11px; box-shadow: 0 0 15px var(--neon-pink); transition: 0.3s;}
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 0 25px var(--neon-pink); }
+        .btn-tg { background: rgba(0,136,204,0.15); border: 2px solid #0088cc; color: #00bbff; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; padding: 7px; border-radius: 6px; font-weight: bold; font-size: 10px;}
+        .btn-tg:hover { background: rgba(0,136,204,0.4); }
+
+        @keyframes blink { from { opacity: 0.5; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<iframe id="game-frame" src="https://dkwin9.com/#/register?invitationCode=33553462271"></iframe>
+
+<div id="float-logo">
+    <img src="https://i.ibb.co.com/gZwsCtLH/IMG-20260308-142133-515.jpg" alt="Icon">
+</div>
+
+<div id="login-box">
+    <h2>PATTERN OF XHAWON</h2>
+    <input type="password" id="user-pass" placeholder="PASSWORD">
+    <button class="btn" onclick="app.login()">UNLOCK XHAWON AI</button>
+    <a href="https://t.me/+XFpXmlGPjMI5N2U1" target="_blank" class="btn-tg"><i class="fab fa-telegram"></i> JOIN TELEGRAM</a>
+    <div id="log-msg" style="color:#ff0055; font-size:10px; margin-top:5px; font-weight:bold;"></div>
+</div>
+
+<!-- MAIN SIGNAL PANEL -->
+<div id="main-panel">
+    <div class="top-row">
+        <span class="arrow">▼</span>
+        <span class="title">PATTERN OF XHAWON</span>
+        <span class="close-x" onclick="app.closePanel()">—</span>
+    </div>
+
+    <div class="panel-body">
+        <div class="left-col">
+            <div class="logo-circle">
+                <img src="https://i.ibb.co.com/gZwsCtLH/IMG-20260308-142133-515.jpg" alt="Logo">
+            </div>
+            <button class="side-btn" onclick="window.open('https://t.me/+XFpXmlGPjMI5N2U1','_blank')">JOIN TG</button>
+            <button class="side-btn" onclick="app.closePanel()">EXIT</button>
+            <button class="side-btn" onclick="app.minimizePanel()">HIDE</button>
+        </div>
+
+        <div class="right-col">
+            <div class="header-bar">PATTERN OF XHAWON</div>
+            <div class="period-bar">
+                <span id="period-text">0000000000000000</span>
+                <span class="timer" id="timer-text">00:30</span>
+            </div>
+            <div class="signal-display">
+                <div class="s-res c-wait" id="main-sig">WAIT</div>
+                <div id="exact-num-display">[0,0]</div>
+            </div>
+            <div class="status-bar" id="status-text">SERVER CONNECTED</div>
+        </div>
+    </div>
+
+    <div class="bottom-btn" onclick="app.toggleLogs()">CHECK RESULT</div>
+</div>
+
+<!-- LIVE LOGS PANEL -->
+<div id="logs-panel">
+    <div class="logs-header">
+        📊 LIVE LOGS
+        <span class="logs-hide-btn" onclick="app.hideLogs()">—</span>
+    </div>
+    <div class="logs-table-header">
+        <div>PRD</div>
+        <div>PRED</div>
+        <div>NUMS</div>
+        <div>ACT</div>
+        <div>RESULT</div>
+    </div>
+    <div class="logs-body" id="logs-body"></div>
+</div>
+
+<script>
+    const fbConf = { apiKey: "AIzaSyBHGFpcMbAFO39eIMjeVy_Waf82_o1QfkI", authDomain: "fir-ai-77fdd.firebaseapp.com", databaseURL: "https://fir-ai-77fdd-default-rtdb.firebaseio.com", projectId: "fir-ai-77fdd", storageBucket: "fir-ai-77fdd.firebasestorage.app", messagingSenderId: "741079425896", appId: "1:741079425896:web:55e7b1c50056e6e90f6cdd" };
+    if (!firebase.apps.length) firebase.initializeApp(fbConf);
+    const db = firebase.database();
+
+    const app = {
+        api: "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json",
+        userKey: null,
+        userData: null,
+        isAuthenticated: false,
+        lastPeriod: "0",
+        pendingSig: null,
+        pendingExactNum: null,
+        pendingPeriodForLog: null,
+        lossStreak: 0,
+        isRecovery: false,
+        deviceID: null,
+        timerInterval: null,
+        timerSeconds: 30,
+        logs: [],
+        logsVisible: false,
+
+        init: function() {
+            this.makeDraggable('float-logo');
+            this.makeDraggable('login-box');
+            this.makeDraggable('main-panel');
+            this.makeDraggable('logs-panel');
+            
+            document.getElementById('float-logo').style.display = 'flex';
+
+            this.deviceID = localStorage.getItem('ikram_device_id');
+            if(!this.deviceID) {
+                this.deviceID = 'DEV_' + Date.now() + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('ikram_device_id', this.deviceID);
+            }
+
+            document.getElementById('float-logo').addEventListener('click', (e) => {
+                if(this.isDragging) return;
+                if(!this.isAuthenticated) {
+                    let box = document.getElementById('login-box');
+                    box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+                } else {
+                    let panel = document.getElementById('main-panel');
+                    panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+                    if (panel.style.display === 'none') {
+                        document.getElementById('logs-panel').style.display = 'none';
+                    }
+                }
+            });
+
+            this.timerInterval = setInterval(() => {
+                this.timerSeconds--;
+                if(this.timerSeconds < 0) this.timerSeconds = 30;
+                let tEl = document.getElementById('timer-text');
+                if(tEl) tEl.innerText = `00:${String(this.timerSeconds).padStart(2,'0')}`;
+            }, 1000);
+
+            let savedPass = localStorage.getItem('ikram_pro_pass');
+            if(savedPass) {
+                document.getElementById('user-pass').value = savedPass;
+                this.login(); 
+            }
+        },
+
+        login: function() {
+            let p = document.getElementById('user-pass').value.trim();
+            if(!p) return;
+            
+            db.ref('ikram_pro_db/users/' + p).once('value', s => {
+                let d = s.val();
+                let msg = document.getElementById('log-msg');
+                if(!d) { msg.innerText = "Invalid Password!"; return; }
+                
+                if(d.deviceID && d.deviceID !== this.deviceID) {
+                    msg.innerText = "Password bound to another device!"; 
+                    return; 
+                }
+
+                if(d.status === 'blocked') { msg.innerText = "Account Blocked!"; this.clearAuth(); return; }
+                if(Date.now() > d.expiry) { msg.innerText = "Time Expired!"; this.clearAuth(); return; }
+
+                if(!d.deviceID) {
+                    db.ref('ikram_pro_db/users/' + p).update({ deviceID: this.deviceID });
+                }
+
+                this.userKey = p;
+                this.userData = d;
+                this.isAuthenticated = true;
+                localStorage.setItem('ikram_pro_pass', p);
+                
+                db.ref('ikram_pro_db/users/' + p).update({ online: true });
+                db.ref('ikram_pro_db/users/' + p).onDisconnect().update({ online: false });
+
+                document.getElementById('login-box').style.display = 'none';
+                document.getElementById('main-panel').style.display = 'block';
+                
+                this.startEngine();
+            });
+        },
+
+        clearAuth: function() {
+            localStorage.removeItem('ikram_pro_pass');
+            this.isAuthenticated = false;
+        },
+
+        startEngine: function() {
+            setInterval(async () => {
+                if(!this.isAuthenticated) return;
+                try {
+                    let res = await fetch(this.api + "?t=" + Date.now());
+                    let data = await res.json();
+                    let list = data.data.list;
+                    
+                    let currentP = list[0].issueNumber;
+                    let runningPeriod = (BigInt(currentP) + 1n).toString();
+
+                    if(currentP !== this.lastPeriod) {
+                        if(this.pendingSig) {
+                            this.evaluateResult(parseInt(list[0].number));
+                        }
+                        this.lastPeriod = currentP;
+                        
+                        document.getElementById('period-text').innerText = runningPeriod;
+                        this.timerSeconds = 30;
+                        
+                        this.generateSignal(list, runningPeriod);
+                    }
+                } catch(e) {}
+            }, 1000);
+        },
+
+        normal1Signal: function(lastNumber) {
+            if (lastNumber >= 5 && lastNumber <= 9) return 'BIG';
+            if (lastNumber >= 0 && lastNumber <= 4) return 'SMALL';
+            return null;
+        },
+
+        pattern1Signal: function(h) {
+            let first = h[0];
+            let next = h[1];
+            if (first === 0) {
+                if ([1,3,6,8].includes(next)) return 'BIG';
+                if ([0,2,4,5,7,9].includes(next)) return 'SMALL';
+                return null;
+            } else {
+                let cnt = h.filter(x => x === first).length;
+                if (cnt <= 1) {
+                    if ([1,3,4,6].includes(first)) return 'BIG';
+                    if ([2,5,7,8,9].includes(first)) return 'SMALL';
+                } else {
+                    if ([1,3,4,6].includes(first)) return 'SMALL';
+                    if ([2,5,7,8,9].includes(first)) return 'BIG';
+                }
+                return null;
+            }
+        },
+
+        pattern2Signal: function(h) {
+            if (!h || h.length < 10) return null;
+            let first = h[0], second = h[1], last = h[9];
+            if (first === 0 || second === 0 || last === 0) return null;
+            let diff = Math.abs(first + second - last);
+            if (diff >= 0 && diff <= 4) return 'SMALL';
+            if (diff >= 5 && diff <= 9) return 'BIG';
+            return null;
+        },
+
+        generateExactNumber: function(signal) {
+            let pool = [];
+            
+            if (signal === 'BIG') {
+                pool = [6, 7, 8, 9];
+            } else if (signal === 'SMALL') {
+                pool = [1, 2, 3, 4];
+            } else {
+                return '-';
+            }
+
+            let a = pool[Math.floor(Math.random() * pool.length)];
+            let b = pool[Math.floor(Math.random() * pool.length)];
+            while (b === a) {
+                b = pool[Math.floor(Math.random() * pool.length)];
+            }
+            
+            return `${a},${b}`;
+        },
+
+        generateSignal: function(list, runningPeriod) {
+            let h = list.map(i => parseInt(i.number));
+            let top = h[0];
+            
+            let finalSig = "SKIP";
+
+            if (!this.isRecovery) {
+                finalSig = this.normal1Signal(top) || "SKIP";
+            } else {
+                let p1 = this.pattern1Signal(h);
+                let p2 = this.pattern2Signal(h);
+                if (p1 && p2 && p1 === p2) {
+                    finalSig = p1;
+                } else {
+                    finalSig = "SKIP";
+                }
+            }
+
+            this.pendingSig = finalSig;
+            this.pendingExactNum = finalSig !== "SKIP" ? this.generateExactNumber(finalSig) : null;
+            this.pendingPeriodForLog = runningPeriod.slice(-4);
+
+            let elSig = document.getElementById('main-sig');
+            let statusEl = document.getElementById('status-text');
+            let exactEl = document.getElementById('exact-num-display');
+
+            elSig.className = 's-res';
+            if(finalSig === "SKIP") {
+                elSig.innerText = "SKIP";
+                elSig.classList.add('c-skip');
+                statusEl.innerText = "NO TRADE";
+                if (exactEl) exactEl.style.display = 'none';
+            } else if (finalSig === "BIG") {
+                elSig.innerText = "BIG";
+                elSig.classList.add('big');
+                statusEl.innerText = this.isRecovery ? "RECOVERY MODE" : "SERVER CONNECTED";
+                if (exactEl) {
+                    exactEl.innerText = `[${this.pendingExactNum}]`;
+                    exactEl.style.display = 'block';
+                }
+            } else {
+                elSig.innerText = "SMALL";
+                elSig.classList.add('small');
+                statusEl.innerText = this.isRecovery ? "RECOVERY MODE" : "SERVER CONNECTED";
+                if (exactEl) {
+                    exactEl.innerText = `[${this.pendingExactNum}]`;
+                    exactEl.style.display = 'block';
+                }
+            }
+        },
+
+        evaluateResult: function(actualNum) {
+            let actDir = actualNum >= 5 ? "BIG" : "SMALL";
+            let pSig = this.pendingSig;
+            let pExact = this.pendingExactNum;
+            let logPeriod = this.pendingPeriodForLog || "-";
+            
+            if(pSig === "SKIP") {
+                this.pendingSig = null;
+                this.pendingExactNum = null;
+                this.pendingPeriodForLog = null;
+                return;
+            }
+            
+            let status = "";
+            
+            if(pSig === actDir) {
+                this.lossStreak = 0; 
+                this.isRecovery = false;
+                
+                let numsArray = pExact ? pExact.split(',').map(n => parseInt(n)) : [];
+                if (numsArray.includes(actualNum)) {
+                    status = "jackpot";
+                } else {
+                    status = "win";
+                }
+            } else {
+                this.lossStreak++;
+                status = "loss";
+                if(this.lossStreak >= 3 && !this.isRecovery) {
+                    this.isRecovery = true; 
+                }
+            }
+
+            this.logs.unshift({
+                period: logPeriod,
+                pred: pSig,
+                nums: pExact || '-',
+                act: actualNum,
+                status: status
+            });
+
+            if (this.logs.length > 50) this.logs.pop();
+            this.renderLogs();
+
+            this.pendingSig = null;
+            this.pendingExactNum = null;
+            this.pendingPeriodForLog = null;
+        },
+
+        renderLogs: function() {
+            let body = document.getElementById('logs-body');
+            body.innerHTML = '';
+            
+            this.logs.forEach(log => {
+                let row = document.createElement('div');
+                row.className = `log-row ${log.status}`;
+                
+                let resultText = '';
+                if (log.status === 'win') resultText = 'WIN ✅';
+                else if (log.status === 'loss') resultText = 'LOSS ❌';
+                else if (log.status === 'jackpot') resultText = 'JACKPOT';
+                
+                row.innerHTML = `
+                    <div>${log.period}</div>
+                    <div>${log.pred}</div>
+                    <div>${log.nums}</div>
+                    <div>${log.act}</div>
+                    <div>${resultText}</div>
+                `;
+                
+                body.appendChild(row);
+            });
+        },
+
+        toggleLogs: function() {
+            let logsPanel = document.getElementById('logs-panel');
+            this.logsVisible = !this.logsVisible;
+            logsPanel.style.display = this.logsVisible ? 'block' : 'none';
+        },
+
+        hideLogs: function() {
+            document.getElementById('logs-panel').style.display = 'none';
+            this.logsVisible = false;
+        },
+
+        closePanel: function() {
+            document.getElementById('main-panel').style.display = 'none';
+            document.getElementById('logs-panel').style.display = 'none';
+            this.logsVisible = false;
+        },
+
+        minimizePanel: function() {
+            document.getElementById('main-panel').style.display = 'none';
+            document.getElementById('logs-panel').style.display = 'none';
+            this.logsVisible = false;
+        },
+
+        isDragging: false,
+        makeDraggable: function(id) {
+            const el = document.getElementById(id);
+            let initialX, initialY;
+
+            const dragStart = (e) => {
+                if(['INPUT', 'BUTTON', 'A', 'I', 'SPAN'].includes(e.target.tagName)) return;
+                if (e.type === "touchstart") {
+                    initialX = e.touches[0].clientX - el.offsetLeft;
+                    initialY = e.touches[0].clientY - el.offsetTop;
+                } else {
+                    initialX = e.clientX - el.offsetLeft;
+                    initialY = e.clientY - el.offsetTop;
+                }
+                this.isDragging = false;
+            };
+
+            const dragMove = (e) => {
+                if (initialX == null || initialY == null) return;
+                this.isDragging = true;
+                e.preventDefault();
+                let currentX, currentY;
+                if (e.type === "touchmove") {
+                    currentX = e.touches[0].clientX - initialX;
+                    currentY = e.touches[0].clientY - initialY;
+                } else {
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                }
+                
+                let maxX = window.innerWidth - el.offsetWidth;
+                let maxY = window.innerHeight - el.offsetHeight;
+                if(currentX < 0) currentX = 0; if(currentX > maxX) currentX = maxX;
+                if(currentY < 0) currentY = 0; if(currentY > maxY) currentY = maxY;
+
+                el.style.left = currentX + "px";
+                el.style.top = currentY + "px";
+            };
+
+            const dragEnd = () => { initialX = null; initialY = null; setTimeout(()=>this.isDragging=false, 50); };
+
+            el.addEventListener('touchstart', dragStart, {passive: false});
+            el.addEventListener('touchend', dragEnd);
+            el.addEventListener('touchmove', dragMove, {passive: false});
+            el.addEventListener('mousedown', dragStart);
+            document.addEventListener('mouseup', dragEnd);
+            document.addEventListener('mousemove', dragMove);
+        }
+    };
+
+    window.onload = () => app.init();
+</script>
+</body>
+</html>
